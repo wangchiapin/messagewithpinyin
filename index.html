@@ -157,7 +157,17 @@ code{background:var(--bg);border:1px solid var(--line);border-radius:3px;padding
   </section>
 
   <section class="card">
-    <h2><span>圖片設定</span><span class="no">03 / 05</span></h2>
+    <h2><span>文字版</span><span class="no">03 / 05</span></h2>
+    <div class="group" style="margin-top:0"><span class="lab">格式</span>
+      <div class="seg" data-key="mode">
+        <button type="button" data-val="two">兩行（漢字＋拼音）</button><button type="button" data-val="bracket">括號</button>
+      </div></div>
+    <div class="group"><pre id="txtOut" aria-live="polite"></pre></div>
+    <p class="hint">「分享文字」「複製文字」會用上面這份。文字沒辦法把拼音排在每個字正上方，要對齊請傳圖片。</p>
+  </section>
+
+  <section class="card">
+    <h2><span>圖片設定</span><span class="no">04 / 05</span></h2>
     <div class="group"><span class="lab">顏色</span>
       <div class="seg" data-key="theme">
         <button type="button" data-val="cream">米黃</button><button type="button" data-val="white">白底</button>
@@ -176,16 +186,6 @@ code{background:var(--bg);border:1px solid var(--line);border-radius:3px;padding
         <button type="button" data-val="kai">楷體</button><button type="button" data-val="hei">黑體</button>
       </div></div>
     <label class="check"><input type="checkbox" id="sign"> 圖片下方加上 IG 帳號署名</label>
-  </section>
-
-  <section class="card">
-    <h2><span>文字版</span><span class="no">04 / 05</span></h2>
-    <div class="group" style="margin-top:0"><span class="lab">格式</span>
-      <div class="seg" data-key="mode">
-        <button type="button" data-val="two">兩行（漢字＋拼音）</button><button type="button" data-val="bracket">括號</button>
-      </div></div>
-    <div class="group"><pre id="txtOut" aria-live="polite"></pre></div>
-    <p class="hint">「分享文字」「複製文字」會用上面這份。文字沒辦法把拼音排在每個字正上方，要對齊請傳圖片。</p>
   </section>
 
   <section class="card">
