@@ -181,6 +181,10 @@ code{background:var(--bg);border:1px solid var(--line);border-radius:3px;padding
       <div class="seg" data-key="pysize">
         <button type="button" data-val="std">標準</button><button type="button" data-val="big">大</button>
       </div></div>
+    <div class="group"><span class="lab">拼音顏色</span>
+      <div class="seg" data-key="tonecolor">
+        <button type="button" data-val="off">單色</button><button type="button" data-val="on">依聲調上色</button>
+      </div></div>
     <div class="group"><span class="lab">漢字字體</span>
       <div class="seg" data-key="font">
         <button type="button" data-val="kai">楷體</button><button type="button" data-val="hei">黑體</button>
@@ -555,7 +559,7 @@ const Engine = (function () {
   'use strict';
   const $ = s => document.querySelector(s);
   const KEY = 'pinyinTool.v1';
-  const DEFAULTS = { theme: 'cream', size: 'm', font: 'kai', pysize: 'std', mode: 'two', sign: false };
+  const DEFAULTS = { theme: 'cream', size: 'm', font: 'kai', pysize: 'std', tonecolor: 'off', mode: 'two', sign: false };
   const state = { text: '', custom: '', manual: {}, s: Object.assign({}, DEFAULTS) };
   try {
     const o = JSON.parse(localStorage.getItem(KEY) || 'null');
@@ -564,6 +568,11 @@ const Engine = (function () {
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} };
 
   /* ---------- 畫圖 ---------- */
+  // 聲調顏色（一聲紅、二聲橘、三聲綠、四聲藍、輕聲灰），深色底用較亮的版本
+  const TONE_COLORS = {
+    light: { 1: '#D23A2E', 2: '#E08A00', 3: '#2E8B3E', 4: '#2F5FC4', 5: '#8A8A8A' },
+    dark:  { 1: '#FF7468', 2: '#FFB547', 3: '#6BCF7A', 4: '#7FA8FF', 5: '#B5B0A8' }
+  };
   const THEMES = {
     cream: { bg: '#FBF4E4', han: '#2B2118', py: '#A63A2B', frame: '#C9A24B', sign: '#8C7B60' },
     white: { bg: '#FFFFFF', han: '#1C1C1C', py: '#B23A2B', frame: null, sign: '#8A8A8A' },
@@ -661,7 +670,7 @@ const Engine = (function () {
         ctx.fillStyle = T.han; ctx.font = hanFont;
         ctx.textAlign = 'center'; ctx.fillText(u.text, cx, hanBase);
         if (u.kind === 'han') {
-          if (u.py) { ctx.fillStyle = T.py; ctx.font = pyFont; ctx.textAlign = 'center'; ctx.fillText(u.py, cx, pyBase); }
+          if (u.py) { ctx.fillStyle = s.tonecolor === 'on' ? TONE_COLORS[s.theme === 'dark' ? 'dark' : 'light'][Engine.toneOf(u.py)] : T.py; ctx.font = pyFont; ctx.textAlign = 'center'; ctx.fillText(u.py, cx, pyBase); }
           hits.push({ x: PAD + it.x, y: y, w: it.w, h: rowH, u });
         }
       }
