@@ -105,6 +105,7 @@ code{background:var(--bg);border:1px solid var(--line);border-radius:3px;padding
 #shCands{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 6px}
 #shCands button{border:1px solid var(--ink);background:var(--field);border-radius:4px;min-width:68px;min-height:48px;padding:6px 14px;font:600 20px var(--sans);color:var(--ink);cursor:pointer}
 #shCands button.on{background:var(--ink);color:#fff}
+#shCands button small{display:block;font:500 12px var(--sans);opacity:.75;margin-top:1px}
 .typein{display:flex;gap:8px;align-items:stretch;margin:14px 0 6px}
 .typein input{flex:1;min-width:0;border:1px solid var(--line);border-radius:4px;padding:10px 12px;font:600 20px var(--sans);color:var(--ink);background:var(--field)}
 .typein input.bad{border-color:var(--accent);outline-color:var(--accent)}
@@ -140,6 +141,10 @@ code{background:var(--bg);border:1px solid var(--line);border-radius:3px;padding
       <button class="mini" id="btnToTrad" type="button">轉成繁體</button>
       <button class="mini" id="btnToSimp" type="button">转成简体</button>
     </div>
+    <div class="group"><span class="lab">標音方式（圖片和文字版都會換）</span>
+      <div class="seg" data-key="script">
+        <button type="button" data-val="pinyin">拼音</button><button type="button" data-val="zhuyin">注音</button>
+      </div></div>
   </section>
 
   <section class="card">
@@ -177,11 +182,11 @@ code{background:var(--bg);border:1px solid var(--line);border-radius:3px;padding
       <div class="seg" data-key="size">
         <button type="button" data-val="s">小</button><button type="button" data-val="m">中</button><button type="button" data-val="l">大</button>
       </div></div>
-    <div class="group"><span class="lab">拼音大小</span>
+    <div class="group"><span class="lab">拼音／注音大小</span>
       <div class="seg" data-key="pysize">
         <button type="button" data-val="std">標準</button><button type="button" data-val="big">大</button>
       </div></div>
-    <div class="group"><span class="lab">拼音顏色</span>
+    <div class="group"><span class="lab">拼音／注音顏色</span>
       <div class="seg" data-key="tonecolor">
         <button type="button" data-val="off">單色</button><button type="button" data-val="on">依聲調上色</button>
       </div></div>
@@ -498,18 +503,57 @@ const Engine = (function () {
     return { lines, rules };
   }
 
+  /* ---------- 拼音 → 注音 ---------- */
+  const ZY_INIT = { b: 'ㄅ', p: 'ㄆ', m: 'ㄇ', f: 'ㄈ', d: 'ㄉ', t: 'ㄊ', n: 'ㄋ', l: 'ㄌ', g: 'ㄍ', k: 'ㄎ', h: 'ㄏ',
+    j: 'ㄐ', q: 'ㄑ', x: 'ㄒ', zh: 'ㄓ', ch: 'ㄔ', sh: 'ㄕ', r: 'ㄖ', z: 'ㄗ', c: 'ㄘ', s: 'ㄙ' };
+  const ZY_FINAL = {
+    a: 'ㄚ', o: 'ㄛ', e: 'ㄜ', 'ê': 'ㄝ', ai: 'ㄞ', ei: 'ㄟ', ao: 'ㄠ', ou: 'ㄡ', an: 'ㄢ', en: 'ㄣ', ang: 'ㄤ', eng: 'ㄥ', er: 'ㄦ', ong: 'ㄨㄥ',
+    i: 'ㄧ', ia: 'ㄧㄚ', io: 'ㄧㄛ', ie: 'ㄧㄝ', iai: 'ㄧㄞ', iao: 'ㄧㄠ', iu: 'ㄧㄡ', iou: 'ㄧㄡ', ian: 'ㄧㄢ', in: 'ㄧㄣ', iang: 'ㄧㄤ', ing: 'ㄧㄥ', iong: 'ㄩㄥ',
+    u: 'ㄨ', ua: 'ㄨㄚ', uo: 'ㄨㄛ', uai: 'ㄨㄞ', ui: 'ㄨㄟ', uei: 'ㄨㄟ', uan: 'ㄨㄢ', un: 'ㄨㄣ', uen: 'ㄨㄣ', uang: 'ㄨㄤ', ueng: 'ㄨㄥ',
+    'ü': 'ㄩ', 'üe': 'ㄩㄝ', 'üan': 'ㄩㄢ', 'ün': 'ㄩㄣ'
+  };
+  const ZY_YW = {
+    yi: 'ㄧ', ya: 'ㄧㄚ', yo: 'ㄧㄛ', ye: 'ㄧㄝ', yai: 'ㄧㄞ', yao: 'ㄧㄠ', you: 'ㄧㄡ', yan: 'ㄧㄢ', yin: 'ㄧㄣ', yang: 'ㄧㄤ', ying: 'ㄧㄥ', yong: 'ㄩㄥ',
+    yu: 'ㄩ', yue: 'ㄩㄝ', yuan: 'ㄩㄢ', yun: 'ㄩㄣ',
+    n: 'ㄣ', ng: 'ㄣ', m: 'ㄇ', hm: 'ㄏㄇ', hng: 'ㄏㄥ',   // 嗯、呣、哼等嘆詞
+    wu: 'ㄨ', wa: 'ㄨㄚ', wo: 'ㄨㄛ', wai: 'ㄨㄞ', wei: 'ㄨㄟ', wan: 'ㄨㄢ', wen: 'ㄨㄣ', wang: 'ㄨㄤ', weng: 'ㄨㄥ'
+  };
+  const ZY_TONE = { 1: '', 2: 'ˊ', 3: 'ˇ', 4: 'ˋ', 5: '˙' };
+  // 回傳 { syms: ['ㄋ','ㄧ'], tone: 3, text: 'ㄋㄧˇ' }；看不懂的拼音回傳 null
+  function toZhuyin(py) {
+    if (!py) return null;
+    const tone = toneOf(py) || 5;
+    let b = stripTone(py).toLowerCase().replace(/v/g, 'ü').replace(/u:/g, 'ü');
+    let sym = null;
+    if (ZY_YW[b]) sym = ZY_YW[b];
+    else if (/^(zh|ch|sh|r|z|c|s)i$/.test(b)) sym = ZY_INIT[b.slice(0, -1)];
+    else if (b === 'ê' || ZY_FINAL[b] && /^(a|o|e|ai|ei|ao|ou|an|en|ang|eng|er)$/.test(b)) sym = ZY_FINAL[b];
+    else {
+      const m = b.match(/^(zh|ch|sh|[bpmfdtnlgkhjqxrzcs])(.+)$/);
+      if (m) {
+        let fin = m[2];
+        if (/^[jqx]$/.test(m[1]) && fin[0] === 'u') fin = 'ü' + fin.slice(1);   // ju → jü
+        if (ZY_FINAL[fin]) sym = ZY_INIT[m[1]] + ZY_FINAL[fin];
+      }
+    }
+    if (!sym) return null;
+    const syms = Array.from(sym);
+    const text = tone === 5 ? '˙' + sym : sym + ZY_TONE[tone];
+    return { syms, tone, text };
+  }
+
   /* ---------- 文字輸出 ---------- */
   const PUNC = { '，': ',', '。': '.', '？': '?', '！': '!', '：': ':', '；': ';', '、': ',', '「': '“', '」': '”', '『': '‘', '』': '’', '（': '(', '）': ')', '～': '~', '…': '...', '⋯': '...' };
   const OPENERS = new Set(['“', '‘', '(', '《', '〈', '¿', '¡', '«', '[']);
   const ENDERS = /[。！？!?；;…]/;
 
-  function pinyinLine(seg) {
+  function pinyinLine(seg, script) {
     let out = '', pendingOpen = '';
     for (const u of seg) {
       if (u.kind === 'space') continue;
       let piece = '';
       let attach = false;
-      if (u.kind === 'han') piece = u.py || u.text;
+      if (u.kind === 'han') { const z = script === 'zhuyin' ? toZhuyin(u.py) : null; piece = z ? z.text : (u.py || u.text); }
       else if (u.kind === 'latin') piece = u.text;
       else {
         const p = PUNC[u.text] !== undefined ? PUNC[u.text] : u.text;
@@ -524,7 +568,7 @@ const Engine = (function () {
     return (out + pendingOpen).trim();
   }
 
-  function textOutput(lines, mode) {
+  function textOutput(lines, mode, script) {
     const out = [];
     for (const units of lines) {
       if (!units.length || units.every(u => u.kind === 'space')) { out.push(''); continue; }
@@ -539,7 +583,7 @@ const Engine = (function () {
         const han = seg.map(u => u.text).join('').trim();
         if (!han) continue;
         if (!seg.some(u => u.kind === 'han')) { out.push(han); continue; }   // 沒有漢字就不用加拼音
-        let py = pinyinLine(seg);
+        let py = pinyinLine(seg, script);
         // 整句（以句號、問號、驚嘆號結尾）才把句首字母大寫
         if (/[.?!…]$/.test(py) || /[”’)]$/.test(py) && /[.?!]/.test(py.slice(-3))) {
           py = py.replace(/\p{L}/u, ch => ch.toUpperCase());
@@ -551,7 +595,7 @@ const Engine = (function () {
     return out.join('\n').replace(/\n{3,}/g, '\n\n').trim();
   }
 
-  return { analyze, candidates, textOutput, numToMark, toneOf, stripTone, BUILTIN_RULES, GT_COUNT, parseRules, buildRules, ctxKey };
+  return { analyze, candidates, textOutput, toZhuyin, numToMark, toneOf, stripTone, BUILTIN_RULES, GT_COUNT, parseRules, buildRules, ctxKey };
 })();
 </script>
 <script>
@@ -559,7 +603,7 @@ const Engine = (function () {
   'use strict';
   const $ = s => document.querySelector(s);
   const KEY = 'pinyinTool.v1';
-  const DEFAULTS = { theme: 'cream', size: 'm', font: 'kai', pysize: 'std', tonecolor: 'off', mode: 'two', sign: false };
+  const DEFAULTS = { theme: 'cream', size: 'm', font: 'kai', pysize: 'std', tonecolor: 'off', script: 'pinyin', mode: 'two', sign: false };
   const state = { text: '', custom: '', manual: {}, s: Object.assign({}, DEFAULTS) };
   try {
     const o = JSON.parse(localStorage.getItem(KEY) || 'null');
@@ -598,11 +642,26 @@ const Engine = (function () {
     const hanFont = F + 'px ' + (HANF[s.font] || HANF.kai);
     const pyFont = P + 'px ' + PYF;
     const contentW = W - PAD * 2;
+    // 注音（直排在字右邊）
+    const ZY = s.script === 'zhuyin';
+    const Z = Math.round(F * (s.pysize === 'big' ? 0.47 : 0.4));
+    // 各字型的注音符號大小差很多，先量實際筆畫高度，再算出字級，讓符號高度約為 Z 的 0.8
+    const zyFam = HANF[s.font] || HANF.kai;
+    ctx.font = '100px ' + zyFam;
+    let gh = 0;
+    for (const c of 'ㄅㄓㄤㄨㄩㄠ') { const m = ctx.measureText(c); gh = Math.max(gh, (m.actualBoundingBoxAscent || 0) + (m.actualBoundingBoxDescent || 0)); }
+    const zyPx = Math.round(gh > 10 ? Z * 0.8 * 100 / gh : Z * 1.2);
+    const zyFont = zyPx + 'px ' + zyFam;
+    const toneFont = Math.round(zyPx * 0.95) + 'px ' + zyFam;
+    const zyGap = Math.round(Z * 0.1), zyColW = Math.round(Z * 1.55);
+    const zyOf = u => (ZY && u.kind === 'han') ? Engine.toZhuyin(u.py) : null;
+    const toneColor = py => TONE_COLORS[s.theme === 'dark' ? 'dark' : 'light'][Engine.toneOf(py)];
 
     function size(u) {
       ctx.font = hanFont;
       let hw = u.kind === 'han' ? F : ctx.measureText(u.text).width;
       if (u.kind === 'space') hw = F * 0.35;
+      if (ZY) return { w: u.kind === 'han' ? F + zyGap + zyColW : hw, hw };
       let pw = 0;
       if (u.kind === 'han' && u.py) { ctx.font = pyFont; pw = ctx.measureText(u.py).width + P * 0.22; }
       return { w: Math.max(hw, pw), hw };
@@ -644,7 +703,7 @@ const Engine = (function () {
       if (cur.length) rows.push({ items: cur });
     }
 
-    const rowH = P * 1.3 + F * 1.2, gap = F * 0.3, blankH = F * 0.6;
+    const rowH = ZY ? Math.max(F * 1.35, Z * 3.6) : P * 1.3 + F * 1.2, gap = F * 0.3, blankH = F * 0.6;
     const signH = s.sign ? 84 : 0;
     let H = PAD * 2 + signH;
     for (const r of rows) H += (r.blank ? blankH : rowH + gap);
@@ -663,11 +722,38 @@ const Engine = (function () {
     ctx.textBaseline = 'alphabetic';
     for (const r of rows) {
       if (r.blank) { y += blankH; continue; }
-      const pyBase = y + P * 1.0, hanBase = y + P * 1.3 + F * 0.9;
+      const pyBase = y + P * 1.0, hanBase = ZY ? y + rowH / 2 + F * 0.36 : y + P * 1.3 + F * 0.9;
       for (const it of r.items) {
         const u = it.u, cx = PAD + it.x + it.w / 2;
         if (u.kind === 'space') continue;
         ctx.fillStyle = T.han; ctx.font = hanFont;
+        if (ZY && u.kind === 'han') {
+          // 漢字在左，注音直排在右
+          const x0 = PAD + it.x;
+          ctx.textAlign = 'center'; ctx.fillText(u.text, x0 + F / 2, hanBase);
+          const z = zyOf(u);
+          if (z) {
+            ctx.fillStyle = s.tonecolor === 'on' ? toneColor(u.py) : T.py;
+            const n = z.syms.length, colX = x0 + F + zyGap + Z / 2, midY = y + rowH / 2;
+            const top = midY - (n * Z) / 2;
+            ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+            ctx.font = zyFont;
+            z.syms.forEach((c, i) => ctx.fillText(c, colX, top + Z * (i + 0.5)));
+            ctx.font = toneFont;
+            if (z.tone === 5) ctx.fillText('˙', colX, top - Z * 0.32);
+            else if (z.tone !== 1) {
+              const ty = n === 1 ? top + Z * 0.5 : top + Z * (n - 1);   // 單一符號放旁邊；多個符號放在最後兩個之間
+              ctx.fillText(z.tone === 2 ? 'ˊ' : z.tone === 3 ? 'ˇ' : 'ˋ', colX + Z * 0.78, ty);
+            }
+            ctx.textBaseline = 'alphabetic';
+          } else if (u.py) {
+            // 轉不出注音（極少見）就把拼音小字放在右邊
+            ctx.fillStyle = T.py; ctx.font = Math.round(Z * 0.6) + 'px ' + PYF; ctx.textAlign = 'left';
+            ctx.fillText(u.py, x0 + F + zyGap, y + rowH / 2);
+          }
+          hits.push({ x: x0, y: y, w: it.w, h: rowH, u });
+          continue;
+        }
         ctx.textAlign = 'center'; ctx.fillText(u.text, cx, hanBase);
         if (u.kind === 'han') {
           if (u.py) { ctx.fillStyle = s.tonecolor === 'on' ? TONE_COLORS[s.theme === 'dark' ? 'dark' : 'light'][Engine.toneOf(u.py)] : T.py; ctx.font = pyFont; ctx.textAlign = 'center'; ctx.fillText(u.py, cx, pyBase); }
@@ -695,7 +781,7 @@ const Engine = (function () {
     if (empty) { $('#txtOut').textContent = ''; analysis = Engine.analyze('', state.custom, state.manual); updateRuleMsg(); return; }
     analysis = Engine.analyze(state.text, state.custom, state.manual);
     draw();
-    $('#txtOut').textContent = Engine.textOutput(analysis.lines, state.s.mode);
+    $('#txtOut').textContent = Engine.textOutput(analysis.lines, state.s.mode, state.s.script);
     updateRuleMsg();
   }
   function updateRuleMsg() {
@@ -781,10 +867,15 @@ const Engine = (function () {
   function openSheet(u) {
     cur = u;
     $('#shChar').textContent = u.text;
-    $('#shCur').textContent = u.py || '（沒有讀音）';
+    const zyMode = state.s.script === 'zhuyin';
+    const label = py => { const z = zyMode && Engine.toZhuyin(py); return z ? z.text + '　' + py : py; };
+    $('#shCur').textContent = u.py ? label(u.py) : '（沒有讀音）';
     const box = $('#shCands'); box.innerHTML = '';
     Engine.candidates(u.text, u.py).forEach(c => {
-      const b = document.createElement('button'); b.type = 'button'; b.textContent = c;
+      const b = document.createElement('button'); b.type = 'button';
+      const z = zyMode && Engine.toZhuyin(c);
+      if (z) { b.textContent = z.text; const sm = document.createElement('small'); sm.textContent = c; b.appendChild(sm); }
+      else b.textContent = c;
       if (c === u.py) b.className = 'on';
       b.onclick = () => choose(c);
       box.appendChild(b);
@@ -811,7 +902,7 @@ const Engine = (function () {
     shOk.disabled = !t.ok;
     shInput.classList.toggle('bad', !!t.raw && !t.ok);
     if (!t.raw) shPreview.innerHTML = HINT;
-    else if (t.ok) shPreview.innerHTML = '會變成：<b>' + t.py + '</b>';
+    else if (t.ok) { const z = Engine.toZhuyin(t.py); shPreview.innerHTML = '會變成：<b>' + t.py + '</b>' + (z ? '（' + z.text + '）' : ''); }
     else shPreview.textContent = '格式不對：一次打一個字的拼音，聲調數字放最後，例如 hao3';
   }
   shInput.addEventListener('input', updateTyped);
@@ -835,7 +926,7 @@ const Engine = (function () {
   /* ---------- 分享 ---------- */
   let tt = 0;
   function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('show'), 2400); }
-  const getText = () => Engine.textOutput(analysis.lines, state.s.mode);
+  const getText = () => Engine.textOutput(analysis.lines, state.s.mode, state.s.script);
   async function getBlob() { if (pending) { clearTimeout(timer); pending = false; render(); } return blobPromise; }
   function download(blob) {
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'pinyin.png';
