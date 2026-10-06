@@ -164,7 +164,7 @@ code{background:#F3E9CF;border-radius:4px;padding:1px 5px;font-size:12.5px}
       <div class="seg" data-key="font">
         <button type="button" data-val="kai">楷體</button><button type="button" data-val="hei">黑體</button>
       </div></div>
-    <label class="check"><input type="checkbox" id="sign"> 圖片下方加上「每天一分鐘」署名</label>
+    <label class="check"><input type="checkbox" id="sign"> 圖片下方加上 IG 帳號署名</label>
   </section>
 
   <section class="card">
@@ -658,7 +658,7 @@ const Engine = (function () {
     }
     if (s.sign) {
       ctx.fillStyle = T.sign; ctx.font = '28px ' + PYF; ctx.textAlign = 'right';
-      ctx.fillText('每天一分鐘 · @cadadiaunosminutos_ben_chino', W - PAD, H - PAD * 0.55);
+      ctx.fillText('@cadadiaunosminutos_ben_chino', W - PAD, H - PAD * 0.55);
     }
     blobPromise = new Promise(res => cv.toBlob(b => res(b), 'image/png'));
   }
