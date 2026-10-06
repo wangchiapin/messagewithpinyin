@@ -50,6 +50,7 @@ textarea:focus,input:focus{outline:2px solid var(--ink);outline-offset:1px}
 .mini:disabled{opacity:.45}
 
 .stage{background:var(--field);border:1px solid var(--line)}
+.stage.clear{background:repeating-conic-gradient(#E4DFD7 0 25%,#FBFAF7 0 50%) 0 0/20px 20px}
 .stage canvas{display:block;width:100%;height:auto;cursor:pointer}
 #empty{padding:48px 20px;text-align:center;color:var(--muted);font-size:14.5px;line-height:1.8}
 #tooLong{padding:28px 20px;text-align:center;color:var(--accent);font-size:14.5px;line-height:1.8}
@@ -173,10 +174,10 @@ code{background:var(--bg);border:1px solid var(--line);border-radius:3px;padding
 
   <section class="card">
     <h2><span>圖片設定</span><span class="no">04 / 05</span></h2>
-    <div class="group"><span class="lab">顏色</span>
+    <div class="group"><span class="lab">顏色（透明底適合貼到簡報、Canva；傳到通訊軟體可能會變成白底或黑底）</span>
       <div class="seg" data-key="theme">
         <button type="button" data-val="cream">米黃</button><button type="button" data-val="white">白底</button>
-        <button type="button" data-val="jade">青綠</button><button type="button" data-val="dark">深色</button>
+        <button type="button" data-val="jade">青綠</button><button type="button" data-val="dark">深色</button><button type="button" data-val="clear">透明</button>
       </div></div>
     <div class="group"><span class="lab">漢字大小</span>
       <div class="seg" data-key="size">
@@ -621,7 +622,8 @@ const Engine = (function () {
     cream: { bg: '#FBF4E4', han: '#2B2118', py: '#A63A2B', frame: '#C9A24B', sign: '#8C7B60' },
     white: { bg: '#FFFFFF', han: '#1C1C1C', py: '#B23A2B', frame: null, sign: '#8A8A8A' },
     jade:  { bg: '#EAF4EE', han: '#17251E', py: '#2A7A66', frame: '#7FB5A3', sign: '#5E7F72' },
-    dark:  { bg: '#1E1C1A', han: '#F4EBDD', py: '#E8B94F', frame: null, sign: '#A09787' }
+    dark:  { bg: '#1E1C1A', han: '#F4EBDD', py: '#E8B94F', frame: null, sign: '#A09787' },
+    clear: { bg: null, han: '#1C1C1C', py: '#B23A2B', frame: null, sign: '#8A8A8A' }   // 透明底：只畫字
   };
   const SIZES = { s: 52, m: 68, l: 88 };
   const HANF = {
@@ -714,7 +716,8 @@ const Engine = (function () {
     if (tooLong) { hits = []; blobPromise = Promise.resolve(null); return; }
 
     cv.width = W; cv.height = H;
-    ctx.fillStyle = T.bg; ctx.fillRect(0, 0, W, H);
+    ctx.clearRect(0, 0, W, H);
+    if (T.bg) { ctx.fillStyle = T.bg; ctx.fillRect(0, 0, W, H); }
     if (T.frame) { ctx.strokeStyle = T.frame; ctx.globalAlpha = .75; ctx.lineWidth = 3; ctx.strokeRect(22, 22, W - 44, H - 44); ctx.globalAlpha = 1; }
 
     hits = [];
@@ -771,6 +774,7 @@ const Engine = (function () {
 
   /* ---------- 更新畫面 ---------- */
   function render() {
+    $('.stage').classList.toggle('clear', state.s.theme === 'clear');
     const empty = !state.text.trim();
     $('#empty').hidden = !empty; cv.hidden = empty;
     if (empty) { $('#tooLong').hidden = true; $('#bar').classList.remove('noimg'); }
