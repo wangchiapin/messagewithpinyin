@@ -3,124 +3,135 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#A63A2B">
+<meta name="theme-color" content="#F5F3EF">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="漢字加拼音">
 <meta name="description" content="貼上中文，產生帶拼音（台灣讀音）的圖片或文字，直接分享到 LINE、WhatsApp。">
 <title>漢字加拼音</title>
 <style>
 :root{
-  --cream:#FBF4E4; --paper:#FFFDF7; --ink:#2B2118; --muted:#7A6B58;
-  --brick:#A63A2B; --brick-d:#8A2E21; --jade:#2F7D6B; --jade-d:#256452; --gold:#C9A24B; --line:#E8D9B5;
-  --kai:"Kaiti TC","BiauKai","DFKai-SB","標楷體","KaiTi","STKaiti","Noto Serif TC","Noto Serif CJK TC",serif;
+  --bg:#F5F3EF; --panel:#ECE7E0; --field:#FBFAF7; --line:#D8D1C5; --rule:#CFC6B8;
+  --ink:#26354F; --ink-d:#1B2840; --body:#5A6270; --muted:#8B9099;
+  --accent:#B0532E; --accent-d:#93441F;
   --sans:"PingFang TC","Noto Sans TC","Microsoft JhengHei","Noto Sans CJK TC",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --latin:"Avenir Next","Helvetica Neue","Segoe UI",Arial,sans-serif;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none!important}
-html{background:var(--cream)}
-body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--cream);
-  padding:0 0 calc(176px + env(safe-area-inset-bottom));line-height:1.55;-webkit-text-size-adjust:100%}
-.wrap{max-width:720px;margin:0 auto;padding:0 16px}
+html{background:var(--bg)}
+body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--bg);
+  padding:0 0 calc(186px + env(safe-area-inset-bottom));line-height:1.6;-webkit-text-size-adjust:100%}
+.wrap{max-width:720px;margin:0 auto;padding:0 24px}
 
-header{padding:calc(18px + env(safe-area-inset-top)) 0 10px;display:flex;gap:14px;align-items:center}
-.stamp{flex:none;width:48px;height:48px;border-radius:7px;background:var(--brick);color:var(--cream);
-  display:grid;place-items:center;font:700 28px/1 var(--kai);transform:rotate(-4deg);
-  box-shadow:inset 0 0 0 2px var(--cream),inset 0 0 0 3.5px var(--brick)}
-h1{margin:0;font:700 24px/1.2 var(--kai);letter-spacing:.06em;color:var(--brick-d)}
-header p{margin:2px 0 0;font-size:13.5px;color:var(--muted)}
+/* 標題區 */
+header{padding:calc(40px + env(safe-area-inset-top)) 0 12px}
+.eyebrow{margin:0 0 18px;font-size:14px;letter-spacing:.24em;color:var(--body)}
+h1{margin:0;font-size:44px;line-height:1.2;font-weight:800;letter-spacing:.02em;color:var(--ink)}
+h1 em{font-style:normal;color:var(--accent)}
+.lead{margin:18px 0 0;font-size:16px;line-height:1.95;color:var(--body)}
 
-.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
-.card h2{margin:0 0 8px;font:700 16px/1.3 var(--kai);letter-spacing:.05em;color:var(--brick-d);display:flex;align-items:center;gap:8px}
-.card h2::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--gold)}
-.hint{font-size:12.5px;color:var(--muted);margin:6px 0 0}
+/* 區塊 */
+.card{background:var(--panel);padding:22px 20px 24px;margin:28px 0 0}
+.card+.card{margin-top:16px}
+.card h2{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:0 0 18px;padding-bottom:14px;
+  border-bottom:1px solid var(--rule);font-size:15px;font-weight:600;letter-spacing:.16em;color:var(--body)}
+.card h2 .no{font:400 14px var(--latin);letter-spacing:.08em;color:var(--body)}
+.hint{font-size:13.5px;line-height:1.8;color:var(--muted);margin:10px 0 0}
 
-textarea{width:100%;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);
-  padding:12px;font:17px/1.6 var(--kai);resize:vertical;min-height:110px}
-textarea:focus{outline:2px solid var(--gold);outline-offset:1px}
-.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-.mini{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:7px 14px;font:14px var(--sans);min-height:36px}
-.mini:active{background:var(--cream)}
-.mini:disabled{opacity:.5}
+textarea{width:100%;border:1px solid var(--line);border-radius:4px;background:var(--field);color:var(--ink);
+  padding:14px;font:17px/1.75 var(--sans);resize:vertical;min-height:120px}
+textarea:focus,input:focus{outline:2px solid var(--ink);outline-offset:1px}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 20px;margin-top:14px}
 .row-gap{flex:1}
+/* 文字連結式的小按鈕 */
+.mini{border:0;border-bottom:1.5px solid var(--ink);border-radius:0;background:none;color:var(--ink);
+  padding:6px 0 4px;font:500 15px var(--sans);min-height:36px;cursor:pointer}
+.mini:active{color:var(--accent);border-color:var(--accent)}
+.mini:disabled{opacity:.45}
 
-.stage{border-radius:10px;overflow:hidden;border:1px solid var(--line);background:#fff}
+.stage{background:var(--field);border:1px solid var(--line)}
 .stage canvas{display:block;width:100%;height:auto;cursor:pointer}
-#empty{padding:44px 18px;text-align:center;color:var(--muted);font-size:14px}
-.reset-line{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px;font-size:12.5px;color:var(--muted)}
+#empty{padding:48px 20px;text-align:center;color:var(--muted);font-size:14.5px;line-height:1.8}
+#tooLong{padding:28px 20px;text-align:center;color:var(--accent);font-size:14.5px;line-height:1.8}
+.reset-line{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;font-size:13.5px;color:var(--muted)}
 
-.group{margin:10px 0 0}
-.group>label,.group>.lab{display:block;font-size:13px;color:var(--muted);margin-bottom:5px}
-.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
-.seg button{flex:1;border:0;border-left:1px solid var(--line);background:transparent;color:var(--ink);
-  padding:10px 4px;font:14px var(--sans);min-height:44px}
+.group{margin:16px 0 0}
+.group>label,.group>.lab{display:block;font-size:13.5px;letter-spacing:.06em;color:var(--body);margin-bottom:8px}
+.seg{display:flex;border:1px solid var(--ink);border-radius:4px;overflow:hidden;background:var(--field)}
+.seg button{flex:1;border:0;border-left:1px solid var(--ink);background:transparent;color:var(--ink);
+  padding:10px 4px;font:500 14.5px var(--sans);min-height:44px;cursor:pointer}
 .seg button:first-child{border-left:0}
-.seg button[aria-pressed="true"]{background:var(--brick);color:#fff;font-weight:600}
-.check{display:flex;gap:8px;align-items:center;font-size:14px;margin-top:12px}
-.check input{width:20px;height:20px;accent-color:var(--brick)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:#fff;font-weight:700}
+.check{display:flex;gap:10px;align-items:center;font-size:14.5px;color:var(--ink);margin-top:18px}
+.check input{width:20px;height:20px;accent-color:var(--ink)}
 
-pre{margin:0;white-space:pre-wrap;word-break:break-word;font:15px/1.7 var(--sans);background:#fff;
-  border:1px solid var(--line);border-radius:10px;padding:12px;max-height:260px;overflow:auto}
-pre.rules{font:12.5px/1.6 ui-monospace,Menlo,Consolas,monospace;max-height:220px}
-details>summary{cursor:pointer;font:700 16px/1.3 var(--kai);letter-spacing:.05em;color:var(--brick-d);padding:2px 0;list-style:none}
+pre{margin:0;white-space:pre-wrap;word-break:break-word;font:15px/1.8 var(--sans);color:var(--ink);background:var(--field);
+  border:1px solid var(--line);border-radius:4px;padding:14px;max-height:260px;overflow:auto}
+pre.rules{font:12.5px/1.65 ui-monospace,Menlo,Consolas,monospace;color:var(--body);max-height:220px}
+details>summary{cursor:pointer;display:flex;justify-content:space-between;align-items:baseline;list-style:none;
+  font-size:15px;font-weight:600;letter-spacing:.16em;color:var(--body)}
 details>summary::-webkit-details-marker{display:none}
-details>summary::before{content:"▸ ";color:var(--gold)}
-details[open]>summary::before{content:"▾ "}
-details .inner{margin-top:10px}
-#ruleMsg{font-size:12.5px;color:var(--muted);margin-top:6px}
-#ruleMsg.bad{color:var(--brick)}
-code{background:#F3E9CF;border-radius:4px;padding:1px 5px;font-size:12.5px}
+details>summary .no::after{content:" ＋";color:var(--ink)}
+details[open]>summary .no::after{content:" －"}
+details[open]>summary{padding-bottom:14px;margin-bottom:18px;border-bottom:1px solid var(--rule)}
+details .inner{margin-top:0}
+details.sub>summary{display:inline-block;font:500 14.5px var(--sans);letter-spacing:0;color:var(--ink);border-bottom:1.5px solid var(--ink);padding:4px 0;margin:14px 0 0}
+details.sub[open]>summary{margin-bottom:12px}
+#ruleMsg{font-size:13.5px;color:var(--muted);margin-top:8px}
+#ruleMsg.bad{color:var(--accent)}
+code{background:var(--bg);border:1px solid var(--line);border-radius:3px;padding:0 5px;font-size:12.5px;color:var(--ink)}
 
-.bar{position:fixed;left:0;right:0;bottom:0;background:rgba(251,244,228,.97);backdrop-filter:blur(6px);
-  border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom));z-index:5}
-.bar .in{max-width:720px;margin:0 auto;display:grid;gap:8px}
-.big2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.small3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.btn{border:0;border-radius:12px;min-height:50px;font:700 16px var(--sans);color:#fff;letter-spacing:.04em}
-.btn.red{background:var(--brick)} .btn.red:active{background:var(--brick-d)}
-.btn.jade{background:var(--jade)} .btn.jade:active{background:var(--jade-d)}
-.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line);min-height:42px;font:600 14px var(--sans)}
-.btn.ghost:active{background:var(--cream)}
-.bar.off .btn{opacity:.4;pointer-events:none}
-.bar.noimg #btnShareImg,.bar.noimg #btnCopyImg,.bar.noimg #btnDownload{opacity:.4;pointer-events:none}
-#tooLong{padding:26px 18px;text-align:center;color:var(--brick);font-size:14px}
+/* 底部動作列 */
+.bar{position:fixed;left:0;right:0;bottom:0;background:rgba(245,243,239,.97);backdrop-filter:blur(6px);
+  border-top:1px solid var(--rule);padding:12px 24px calc(10px + env(safe-area-inset-bottom));z-index:5}
+.bar .in{max-width:672px;margin:0 auto;display:grid;gap:6px}
+.big2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.small3{display:flex;justify-content:space-between;gap:8px}
+.btn{border-radius:4px;min-height:52px;font:700 16.5px var(--sans);letter-spacing:.06em;cursor:pointer}
+.btn.primary{border:0;background:var(--ink);color:#fff} .btn.primary:active{background:var(--ink-d)}
+.btn.outline{border:1.5px solid var(--ink);background:var(--field);color:var(--ink)} .btn.outline:active{background:var(--panel)}
+.btn.link{border:0;background:none;color:var(--ink);min-height:40px;font:500 14.5px var(--sans);letter-spacing:.02em;
+  text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:5px;padding:0 2px}
+.btn.link:active{color:var(--accent)}
+.bar.off .btn{opacity:.35;pointer-events:none}
+.bar.noimg #btnShareImg,.bar.noimg #btnCopyImg,.bar.noimg #btnDownload{opacity:.35;pointer-events:none}
 
-#sheet{position:fixed;inset:0;background:rgba(43,33,24,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
-#sheet[hidden]{display:none}
-.sheet-card{width:100%;max-width:720px;background:var(--paper);border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));max-height:80vh;overflow:auto}
-.sheet-head{display:flex;align-items:baseline;gap:12px}
-#shChar{font:700 44px/1 var(--kai)}
-#shCur{font-size:20px;color:var(--brick);font-weight:600}
-#shCands{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 6px}
-#shCands button{border:1px solid var(--line);background:#fff;border-radius:12px;min-width:68px;min-height:48px;padding:6px 14px;font:600 20px var(--sans);color:var(--ink)}
-#shCands button.on{background:var(--brick);border-color:var(--brick);color:#fff}
-.typein{display:flex;gap:8px;align-items:stretch;margin:12px 0 4px}
-.typein input{flex:1;min-width:0;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font:600 20px var(--sans);color:var(--ink);background:#fff}
-.typein input:focus{outline:2px solid var(--gold);outline-offset:1px}
-.typein input.bad{border-color:var(--brick);outline-color:var(--brick)}
-.typein button{border:0;border-radius:12px;padding:0 18px;min-height:48px;font:700 16px var(--sans);color:#fff;background:var(--jade)}
-.typein button:disabled{opacity:.4}
-#shPreview{font-size:13px;color:var(--muted);min-height:1.4em}
-#shPreview b{color:var(--brick);font-size:17px}
-.sheet-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+/* 換讀音面板 */
+#sheet{position:fixed;inset:0;background:rgba(27,40,64,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet-card{width:100%;max-width:720px;background:var(--bg);border-radius:8px 8px 0 0;padding:22px 24px calc(18px + env(safe-area-inset-bottom));max-height:82vh;overflow:auto}
+.sheet-head{display:flex;align-items:baseline;gap:14px;padding-bottom:14px;border-bottom:1px solid var(--rule)}
+#shChar{font:800 46px/1 var(--sans);color:var(--ink)}
+#shCur{font-size:21px;color:var(--accent);font-weight:700}
+#shCands{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 6px}
+#shCands button{border:1px solid var(--ink);background:var(--field);border-radius:4px;min-width:68px;min-height:48px;padding:6px 14px;font:600 20px var(--sans);color:var(--ink);cursor:pointer}
+#shCands button.on{background:var(--ink);color:#fff}
+.typein{display:flex;gap:8px;align-items:stretch;margin:14px 0 6px}
+.typein input{flex:1;min-width:0;border:1px solid var(--line);border-radius:4px;padding:10px 12px;font:600 20px var(--sans);color:var(--ink);background:var(--field)}
+.typein input.bad{border-color:var(--accent);outline-color:var(--accent)}
+.typein button{border:0;border-radius:4px;padding:0 20px;min-height:48px;font:700 16px var(--sans);color:#fff;background:var(--ink);cursor:pointer}
+.typein button:disabled{opacity:.35}
+#shPreview{font-size:13.5px;color:var(--muted);min-height:1.5em}
+#shPreview b{color:var(--accent);font-size:18px}
+.sheet-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
 
-#toast{position:fixed;left:50%;bottom:calc(186px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(10px);
-  background:rgba(43,33,24,.92);color:#fff;padding:10px 16px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;
+#toast{position:fixed;left:50%;bottom:calc(196px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(10px);
+  background:var(--ink);color:#fff;padding:10px 18px;border-radius:4px;font-size:14px;opacity:0;pointer-events:none;
   transition:opacity .2s,transform .2s;z-index:30;max-width:90vw;text-align:center}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media (max-width:380px){ h1{font-size:38px} .wrap{padding:0 18px} .bar{padding-left:18px;padding-right:18px} }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <div class="stamp" aria-hidden="true">拼</div>
-    <div>
-      <h1>漢字加拼音</h1>
-      <p>貼上中文，變成有拼音的圖片或文字，直接傳給學生</p>
-    </div>
+    <p class="eyebrow">華語老師的教學小工具</p>
+    <h1>漢字加<em>拼音</em>。</h1>
+    <p class="lead">貼上中文，變成有拼音的圖片或文字，<br>直接傳給學生。台灣讀音，破音字自動判斷。</p>
   </header>
 
   <section class="card">
-    <h2>輸入中文</h2>
+    <h2><span>輸入中文</span><span class="no">01 / 05</span></h2>
     <textarea id="src" rows="4" placeholder="例：你好，我是Ben。&#10;我是台灣人，我住在台北。" aria-label="輸入中文"></textarea>
     <div class="row">
       <button class="mini" id="btnSample" type="button">範例</button>
@@ -132,7 +143,7 @@ code{background:#F3E9CF;border-radius:4px;padding:1px 5px;font-size:12.5px}
   </section>
 
   <section class="card">
-    <h2>圖片預覽</h2>
+    <h2><span>圖片預覽</span><span class="no">02 / 05</span></h2>
     <div class="stage">
       <div id="empty">在上面輸入中文，這裡就會出現加了拼音的圖片。</div>
       <div id="tooLong" hidden>內容太長，做成一張圖片會超過手機的上限。請分成幾段（建議一次 10 行以內）。文字版仍然可以分享。</div>
@@ -146,7 +157,7 @@ code{background:#F3E9CF;border-radius:4px;padding:1px 5px;font-size:12.5px}
   </section>
 
   <section class="card">
-    <h2>圖片設定</h2>
+    <h2><span>圖片設定</span><span class="no">03 / 05</span></h2>
     <div class="group"><span class="lab">顏色</span>
       <div class="seg" data-key="theme">
         <button type="button" data-val="cream">米黃</button><button type="button" data-val="white">白底</button>
@@ -168,7 +179,7 @@ code{background:#F3E9CF;border-radius:4px;padding:1px 5px;font-size:12.5px}
   </section>
 
   <section class="card">
-    <h2>文字版</h2>
+    <h2><span>文字版</span><span class="no">04 / 05</span></h2>
     <div class="group" style="margin-top:0"><span class="lab">格式</span>
       <div class="seg" data-key="mode">
         <button type="button" data-val="two">兩行（漢字＋拼音）</button><button type="button" data-val="bracket">括號</button>
@@ -179,12 +190,12 @@ code{background:#F3E9CF;border-radius:4px;padding:1px 5px;font-size:12.5px}
 
   <section class="card">
     <details id="rulesBox">
-      <summary>自訂讀音規則</summary>
+      <summary><span>自訂讀音規則</span><span class="no">05 / 05</span></summary>
       <div class="inner">
         <textarea id="custom" rows="4" spellcheck="false" placeholder="垃圾=lè sè&#10;一般=yì bān" aria-label="自訂讀音規則"></textarea>
         <div id="ruleMsg"></div>
         <p class="hint">一行一條：<code>詞=拼音</code>，音節用空格分開。聲調可以直接打數字：<code>le4 se4</code> 會變成 lè sè，ü 用 v 打（<code>nv3</code> → nǚ）。你寫的規則優先於所有內建規則（包括 GoodTeacher 的語境規則）。</p>
-        <details style="margin-top:10px"><summary style="font:600 14px var(--sans);letter-spacing:0;color:var(--ink)">看內建規則</summary>
+        <details class="sub"><summary>看內建規則</summary>
           <div class="inner"><pre class="rules" id="builtin"></pre></div></details>
       </div>
     </details>
@@ -194,13 +205,13 @@ code{background:#F3E9CF;border-radius:4px;padding:1px 5px;font-size:12.5px}
 <div class="bar off" id="bar">
   <div class="in">
     <div class="big2">
-      <button class="btn red" id="btnShareImg" type="button">分享圖片</button>
-      <button class="btn jade" id="btnShareTxt" type="button">分享文字</button>
+      <button class="btn primary" id="btnShareImg" type="button">分享圖片</button>
+      <button class="btn outline" id="btnShareTxt" type="button">分享文字</button>
     </div>
     <div class="small3">
-      <button class="btn ghost" id="btnCopyTxt" type="button">複製文字</button>
-      <button class="btn ghost" id="btnCopyImg" type="button">複製圖片</button>
-      <button class="btn ghost" id="btnDownload" type="button">下載圖片</button>
+      <button class="btn link" id="btnCopyTxt" type="button">複製文字</button>
+      <button class="btn link" id="btnCopyImg" type="button">複製圖片</button>
+      <button class="btn link" id="btnDownload" type="button">下載圖片</button>
     </div>
   </div>
 </div>
