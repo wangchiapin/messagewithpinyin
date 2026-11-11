@@ -159,6 +159,7 @@ code{background:var(--bg);border:1px solid var(--line);border-radius:3px;padding
       <div id="guideBox" hidden></div>
     </div>
     <p class="hint" id="guideHint" hidden></p>
+    <p class="hint" id="moveHint" hidden>想移動文字：用手指按住文字拖一拖（點一下文字是改讀音）。要捲動頁面，請從文字以外的地方滑。</p>
     <p class="hint">讀音不對？點圖片上的那個字，換成正確的讀音。</p>
     <div class="reset-line" id="resetLine" hidden>
       <span id="resetInfo"></span>
@@ -184,6 +185,7 @@ code{background:var(--bg);border:1px solid var(--line);border-radius:3px;padding
         <button type="button" data-val="4x5">直式 4:5</button><button type="button" data-val="9x16">限動 9:16</button>
       </div>
       <p class="hint">自動＝依文字長度；其他尺寸是 IG 的標準大小（寬 1080），文字會置中。文字太多放不下時，請縮短或改選更高的尺寸。</p></div>
+    <div class="row" style="margin-top:10px"><button class="mini" id="btnCenterX" type="button">左右置中</button><button class="mini" id="btnCenterY" type="button">上下置中</button><button class="mini" id="btnCenter" type="button">全部置中</button></div>
     <label class="check" id="guideLab"><input type="checkbox" id="guide"> 預覽顯示 IG 參考線（只在預覽出現，不會畫進圖片）</label>
     <div class="group"><span class="lab">顏色（透明底適合貼到簡報、Canva；傳到通訊軟體可能會變成白底或黑底）</span>
       <div class="seg" data-key="theme">
@@ -615,7 +617,7 @@ const Engine = (function () {
   'use strict';
   const $ = s => document.querySelector(s);
   const KEY = 'pinyinTool.v1';
-  const DEFAULTS = { theme: 'cream', size: 'm', font: 'kai', pysize: 'std', tonecolor: 'off', script: 'pinyin', mode: 'two', sign: false, ratio: 'auto', guide: true };
+  const DEFAULTS = { theme: 'cream', size: 'm', font: 'kai', pysize: 'std', tonecolor: 'off', script: 'pinyin', mode: 'two', sign: false, ratio: 'auto', guide: true, px: 0, py: 0 };
   const state = { text: '', custom: '', manual: {}, s: Object.assign({}, DEFAULTS) };
   try {
     const o = JSON.parse(localStorage.getItem(KEY) || 'null');
@@ -648,7 +650,7 @@ const Engine = (function () {
   const CLOSE = /^[，。、；：！？）」』》〉”’,.;:!?)\]]$/;
   const OPEN = /^[（「『《〈“‘(\[]$/;
   const cv = $('#cv'), ctx = cv.getContext('2d');
-  let hits = [], blobPromise = Promise.resolve(null), analysis = null, tooLong = false;
+  let hits = [], blobPromise = Promise.resolve(null), analysis = null, tooLong = false, blockBox = null, drag = null, suppressClick = false;
 
   function draw() {
     const s = state.s, T = THEMES[s.theme] || THEMES.cream;
@@ -728,9 +730,24 @@ const Engine = (function () {
     $('#tooLong').textContent = fixedH ? '內容太多，放不下這個尺寸。請縮短文字、把漢字大小調小，或改選更高的尺寸（自動、4:5、限動 9:16）。文字版仍然可以分享。' : TOOLONG_DEFAULT;
     $('#tooLong').hidden = !tooLong; cv.hidden = tooLong;
     $('#bar').classList.toggle('noimg', tooLong);
+    blockBox = null;
     if (tooLong) { hits = []; blobPromise = Promise.resolve(null); return; }
-    let offY = 0;                       // 固定尺寸時，文字整塊置中
-    if (fixedH) { offY = Math.round((fixedH - H0) / 2); H = fixedH; }
+    // 文字整塊的位置：自動尺寸靠左上；固定尺寸預設置中，可以用手指拖曳
+    let baseX = PAD, offY = 0, rowsW = 0;
+    for (const r of rows) if (!r.blank) for (const it of r.items) rowsW = Math.max(rowsW, it.x + it.w);
+    ctx.font = '28px ' + PYF;
+    const signW = s.sign ? ctx.measureText('@cadadiaunosminutos_ben_chino').width : 0;
+    const blockW = Math.max(rowsW, signW, 1);
+    const contentH = H0 - PAD * 2, tailH = s.sign ? Math.round(PAD * 0.45) + 8 : 0;
+    if (fixedH) {
+      const M = 16, cx0 = (W - blockW) / 2, cy0 = (fixedH - contentH) / 2;
+      let bx = cx0 + (s.px || 0) * W, by = cy0 + (s.py || 0) * fixedH;
+      bx = Math.max(M, Math.min(W - M - blockW, bx));
+      by = Math.max(M, Math.min(fixedH - M - contentH - tailH, by));
+      s.px = (bx - cx0) / W; s.py = (by - cy0) / fixedH;
+      baseX = Math.round(bx); offY = Math.round(by) - PAD; H = fixedH;
+      blockBox = { x: baseX, y: Math.round(by), w: Math.round(blockW), h: contentH + tailH };
+    }
 
     cv.width = W; cv.height = H;
     ctx.clearRect(0, 0, W, H);
@@ -744,12 +761,12 @@ const Engine = (function () {
       if (r.blank) { y += blankH; continue; }
       const pyBase = y + P * 1.0, hanBase = ZY ? y + rowH / 2 + F * 0.36 : y + P * 1.3 + F * 0.9;
       for (const it of r.items) {
-        const u = it.u, cx = PAD + it.x + it.w / 2;
+        const u = it.u, cx = baseX + it.x + it.w / 2;
         if (u.kind === 'space') continue;
         ctx.fillStyle = T.han; ctx.font = hanFont;
         if (ZY && u.kind === 'han') {
           // 漢字在左，注音直排在右
-          const x0 = PAD + it.x;
+          const x0 = baseX + it.x;
           ctx.textAlign = 'center'; ctx.fillText(u.text, x0 + F / 2, hanBase);
           const z = zyOf(u);
           if (z) {
@@ -777,22 +794,23 @@ const Engine = (function () {
         ctx.textAlign = 'center'; ctx.fillText(u.text, cx, hanBase);
         if (u.kind === 'han') {
           if (u.py) { ctx.fillStyle = s.tonecolor === 'on' ? TONE_COLORS[s.theme === 'dark' ? 'dark' : 'light'][Engine.toneOf(u.py)] : T.py; ctx.font = pyFont; ctx.textAlign = 'center'; ctx.fillText(u.py, cx, pyBase); }
-          hits.push({ x: PAD + it.x, y: y, w: it.w, h: rowH, u });
+          hits.push({ x: baseX + it.x, y: y, w: it.w, h: rowH, u });
         }
       }
       y += rowH + gap;
     }
     if (s.sign) {
       ctx.fillStyle = T.sign; ctx.font = '28px ' + PYF; ctx.textAlign = 'right';
-      ctx.fillText('@cadadiaunosminutos_ben_chino', W - PAD, offY + H0 - PAD * 0.55);
+      ctx.fillText('@cadadiaunosminutos_ben_chino', fixedH ? baseX + blockW : W - PAD, offY + H0 - PAD * 0.55);
     }
-    blobPromise = new Promise(res => cv.toBlob(b => res(b), 'image/png'));
+    if (!(drag && drag.moved)) blobPromise = new Promise(res => cv.toBlob(b => res(b), 'image/png'));   // 拖曳中先不產生圖檔
   }
 
   /* ---------- IG 參考線（只畫在預覽上，不進圖片） ---------- */
   function updateGuide() {
     const s = state.s, box = $('#guideBox'), fixed = !!RATIO_H[s.ratio];
     $('#guideLab').style.display = fixed ? '' : 'none';
+    $('#btnCenter').parentNode.style.display = fixed ? '' : 'none'; $('#moveHint').hidden = !(fixed && !cv.hidden);
     const on = fixed && s.guide && !cv.hidden;
     box.hidden = !on; $('#guideHint').hidden = !on; box.innerHTML = '';
     if (!on) return;
@@ -893,7 +911,7 @@ const Engine = (function () {
     const sync = () => seg.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(String(state.s[key]) === b.dataset.val)));
     seg.addEventListener('click', e => {
       const b = e.target.closest('button'); if (!b) return;
-      state.s[key] = b.dataset.val; save(); sync(); render();
+      state.s[key] = b.dataset.val; if (key === 'ratio') { state.s.px = 0; state.s.py = 0; } save(); sync(); render();
     });
     sync();
   });
@@ -902,9 +920,47 @@ const Engine = (function () {
   const sign = $('#sign'); sign.checked = !!state.s.sign;
   sign.onchange = () => { state.s.sign = sign.checked; save(); render(); };
 
+  /* ---------- 拖曳移動文字（固定尺寸時） ---------- */
+  function canvasPt(cx, cy) { const r = cv.getBoundingClientRect(); return { x: (cx - r.left) * cv.width / r.width, y: (cy - r.top) * cv.height / r.height }; }
+  function dragStart(cx, cy) {
+    if (!blockBox || cv.hidden) return false;
+    const p = canvasPt(cx, cy), b = blockBox, m = 36;
+    if (p.x < b.x - m || p.x > b.x + b.w + m || p.y < b.y - m || p.y > b.y + b.h + m) return false;
+    drag = { cx: cx, cy: cy, sx: p.x, sy: p.y, px0: state.s.px || 0, py0: state.s.py || 0, moved: false, raf: 0 };
+    return true;
+  }
+  function dragMove(cx, cy) {
+    if (!drag) return;
+    if (!drag.moved && Math.hypot(cx - drag.cx, cy - drag.cy) < 8) return;   // 沒移動多少就當作點一下
+    drag.moved = true;
+    const p = canvasPt(cx, cy), fixedH = RATIO_H[state.s.ratio];
+    if (!fixedH) return;
+    state.s.px = drag.px0 + (p.x - drag.sx) / W; state.s.py = drag.py0 + (p.y - drag.sy) / fixedH;
+    if (!drag.raf) drag.raf = requestAnimationFrame(() => { if (drag) { drag.raf = 0; draw(); } });
+  }
+  function dragEnd() {
+    if (!drag) return;
+    const moved = drag.moved; if (drag.raf) cancelAnimationFrame(drag.raf);
+    drag = null;
+    if (moved) {
+      suppressClick = true; setTimeout(() => { suppressClick = false; }, 400);
+      draw(); save();
+    }
+  }
+  cv.addEventListener('touchstart', e => { if (e.touches.length === 1) dragStart(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
+  cv.addEventListener('touchmove', e => { if (drag) { e.preventDefault(); dragMove(e.touches[0].clientX, e.touches[0].clientY); } }, { passive: false });
+  cv.addEventListener('touchend', dragEnd); cv.addEventListener('touchcancel', dragEnd);
+  cv.addEventListener('mousedown', e => { if (e.button === 0) dragStart(e.clientX, e.clientY); });
+  window.addEventListener('mousemove', e => { if (drag) dragMove(e.clientX, e.clientY); });
+  window.addEventListener('mouseup', dragEnd);
+  $('#btnCenter').onclick = () => { state.s.px = 0; state.s.py = 0; save(); render(); toast('文字已置中'); };
+  $('#btnCenterX').onclick = () => { state.s.px = 0; save(); render(); toast('已左右置中'); };
+  $('#btnCenterY').onclick = () => { state.s.py = 0; save(); render(); toast('已上下置中'); };
+
   /* ---------- 點字換讀音 ---------- */
   let cur = null;
   cv.addEventListener('click', e => {
+    if (suppressClick) return;
     const r = cv.getBoundingClientRect();
     const x = (e.clientX - r.left) * cv.width / r.width, y = (e.clientY - r.top) * cv.height / r.height;
     const h = hits.find(h => x >= h.x && x < h.x + h.w && y >= h.y && y < h.y + h.h);
@@ -1008,7 +1064,7 @@ const Engine = (function () {
   $('#btnDownload').onclick = async () => { const blob = await getBlob(); if (blob) { download(blob); toast('已下載圖片'); } };
 
   render();
-  window.__pinyinTool = { state, render, getText, getBlob, hits: () => hits };
+  window.__pinyinTool = { state, render, getText, getBlob, hits: () => hits, box: () => blockBox, drag: () => drag };
 })();
 </script>
 </body>
