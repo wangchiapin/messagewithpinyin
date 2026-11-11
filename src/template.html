@@ -385,10 +385,8 @@ code{background:var(--bg);border:1px solid var(--line);border-radius:3px;padding
     // 文字整塊的位置：自動尺寸靠左上；固定尺寸預設置中，可以用手指拖曳
     let baseX = PAD, offY = 0, rowsW = 0;
     for (const r of rows) if (!r.blank) for (const it of r.items) rowsW = Math.max(rowsW, it.x + it.w);
-    ctx.font = '28px ' + PYF;
-    const signW = s.sign ? ctx.measureText('@cadadiaunosminutos_ben_chino').width : 0;
-    const blockW = Math.max(rowsW, signW, 1);
-    const contentH = H0 - PAD * 2, tailH = s.sign ? Math.round(PAD * 0.45) + 8 : 0;
+    const blockW = Math.max(rowsW, 1);                    // IG 署名不算在文字塊裡，永遠固定在圖片右下角
+    const contentH = H0 - PAD * 2 - signH, tailH = 0;
     if (fixedH) {
       const M = 16, cx0 = (W - blockW) / 2, cy0 = (fixedH - contentH) / 2;
       let bx = cx0 + (s.px || 0) * W, by = cy0 + (s.py || 0) * fixedH;
@@ -451,7 +449,7 @@ code{background:var(--bg);border:1px solid var(--line);border-radius:3px;padding
     }
     if (s.sign) {
       ctx.fillStyle = T.sign; ctx.font = '28px ' + PYF; ctx.textAlign = 'right';
-      ctx.fillText('@cadadiaunosminutos_ben_chino', fixedH ? baseX + blockW : W - PAD, offY + H0 - PAD * 0.55);
+      ctx.fillText('@cadadiaunosminutos_ben_chino', W - PAD, H - PAD * 0.55);
     }
     if (!(drag && drag.moved)) blobPromise = new Promise(res => cv.toBlob(b => res(b), 'image/png'));   // 拖曳中先不產生圖檔
   }
