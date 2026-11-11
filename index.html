@@ -3,15 +3,6 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<link rel="icon" type="image/png" href="icon.png">
-<link rel="apple-touch-icon" href="icon.png">
-<meta property="og:type" content="website">
-<meta property="og:title" content="漢字加拼音 · Chino con pinyin">
-<meta property="og:description" content="貼上中文，一鍵加拼音傳給學生｜Pega el texto y añade pinyin para tus alumnos">
-<meta property="og:url" content="https://wangchiapin.github.io/messagewithpinyin/">
-<meta property="og:image" content="https://wangchiapin.github.io/messagewithpinyin/og.jpg?v=20261029">
-<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
-<meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#F5F3EF">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="漢字加拼音">
@@ -58,7 +49,9 @@ textarea:focus,input:focus{outline:2px solid var(--ink);outline-offset:1px}
 .mini:active{color:var(--accent);border-color:var(--accent)}
 .mini:disabled{opacity:.45}
 
-.stage{background:var(--field);border:1px solid var(--line)}
+.stage{position:relative;background:var(--field);border:1px solid var(--line)}
+#guideBox{position:absolute;top:0;right:0;bottom:0;left:0;pointer-events:none;overflow:hidden}
+#guideBox i{position:absolute;background:rgba(30,28,26,.16)}
 .stage.clear{background:repeating-conic-gradient(#E4DFD7 0 25%,#FBFAF7 0 50%) 0 0/20px 20px}
 .stage canvas{display:block;width:100%;height:auto;cursor:pointer}
 #empty{padding:48px 20px;text-align:center;color:var(--muted);font-size:14.5px;line-height:1.8}
@@ -163,7 +156,9 @@ code{background:var(--bg);border:1px solid var(--line);border-radius:3px;padding
       <div id="empty">在上面輸入中文，這裡就會出現加了拼音的圖片。</div>
       <div id="tooLong" hidden>內容太長，做成一張圖片會超過手機的上限。請分成幾段（建議一次 10 行以內）。文字版仍然可以分享。</div>
       <canvas id="cv" hidden aria-label="加了拼音的圖片"></canvas>
+      <div id="guideBox" hidden></div>
     </div>
+    <p class="hint" id="guideHint" hidden></p>
     <p class="hint">讀音不對？點圖片上的那個字，換成正確的讀音。</p>
     <div class="reset-line" id="resetLine" hidden>
       <span id="resetInfo"></span>
@@ -183,6 +178,13 @@ code{background:var(--bg);border:1px solid var(--line);border-radius:3px;padding
 
   <section class="card">
     <h2><span>圖片設定</span><span class="no">04 / 05</span></h2>
+    <div class="group" style="margin-top:0"><span class="lab">圖片尺寸（IG 貼文用）</span>
+      <div class="seg" data-key="ratio">
+        <button type="button" data-val="auto">自動</button><button type="button" data-val="1x1">正方 1:1</button>
+        <button type="button" data-val="4x5">直式 4:5</button><button type="button" data-val="9x16">限動 9:16</button>
+      </div>
+      <p class="hint">自動＝依文字長度；其他尺寸是 IG 的標準大小（寬 1080），文字會置中。文字太多放不下時，請縮短或改選更高的尺寸。</p></div>
+    <label class="check" id="guideLab"><input type="checkbox" id="guide"> 預覽顯示 IG 參考線（只在預覽出現，不會畫進圖片）</label>
     <div class="group"><span class="lab">顏色（透明底適合貼到簡報、Canva；傳到通訊軟體可能會變成白底或黑底）</span>
       <div class="seg" data-key="theme">
         <button type="button" data-val="cream">米黃</button><button type="button" data-val="white">白底</button>
@@ -613,7 +615,7 @@ const Engine = (function () {
   'use strict';
   const $ = s => document.querySelector(s);
   const KEY = 'pinyinTool.v1';
-  const DEFAULTS = { theme: 'cream', size: 'm', font: 'kai', pysize: 'std', tonecolor: 'off', script: 'pinyin', mode: 'two', sign: false };
+  const DEFAULTS = { theme: 'cream', size: 'm', font: 'kai', pysize: 'std', tonecolor: 'off', script: 'pinyin', mode: 'two', sign: false, ratio: 'auto', guide: true };
   const state = { text: '', custom: '', manual: {}, s: Object.assign({}, DEFAULTS) };
   try {
     const o = JSON.parse(localStorage.getItem(KEY) || 'null');
@@ -641,6 +643,8 @@ const Engine = (function () {
   };
   const PYF = '"Segoe UI","Helvetica Neue","Noto Sans","Arial",sans-serif';
   const W = 1080, PAD = 76;
+  const RATIO_H = { '1x1': 1080, '4x5': 1350, '9x16': 1920 };   // IG 標準尺寸（寬 1080）
+  const TOOLONG_DEFAULT = $('#tooLong').textContent;
   const CLOSE = /^[，。、；：！？）」』》〉”’,.;:!?)\]]$/;
   const OPEN = /^[（「『《〈“‘(\[]$/;
   const cv = $('#cv'), ctx = cv.getContext('2d');
@@ -719,10 +723,14 @@ const Engine = (function () {
     let H = PAD * 2 + signH;
     for (const r of rows) H += (r.blank ? blankH : rowH + gap);
     H = Math.max(Math.round(H - gap), 300);
-    tooLong = H > 12000;           // 手機瀏覽器的畫布上限約 1600 萬像素
+    const H0 = H, fixedH = RATIO_H[s.ratio] || 0;
+    tooLong = fixedH ? H0 > fixedH : H0 > 12000;           // 手機瀏覽器的畫布上限約 1600 萬像素
+    $('#tooLong').textContent = fixedH ? '內容太多，放不下這個尺寸。請縮短文字、把漢字大小調小，或改選更高的尺寸（自動、4:5、限動 9:16）。文字版仍然可以分享。' : TOOLONG_DEFAULT;
     $('#tooLong').hidden = !tooLong; cv.hidden = tooLong;
     $('#bar').classList.toggle('noimg', tooLong);
     if (tooLong) { hits = []; blobPromise = Promise.resolve(null); return; }
+    let offY = 0;                       // 固定尺寸時，文字整塊置中
+    if (fixedH) { offY = Math.round((fixedH - H0) / 2); H = fixedH; }
 
     cv.width = W; cv.height = H;
     ctx.clearRect(0, 0, W, H);
@@ -730,7 +738,7 @@ const Engine = (function () {
     if (T.frame) { ctx.strokeStyle = T.frame; ctx.globalAlpha = .75; ctx.lineWidth = 3; ctx.strokeRect(22, 22, W - 44, H - 44); ctx.globalAlpha = 1; }
 
     hits = [];
-    let y = PAD;
+    let y = PAD + offY;
     ctx.textBaseline = 'alphabetic';
     for (const r of rows) {
       if (r.blank) { y += blankH; continue; }
@@ -776,9 +784,31 @@ const Engine = (function () {
     }
     if (s.sign) {
       ctx.fillStyle = T.sign; ctx.font = '28px ' + PYF; ctx.textAlign = 'right';
-      ctx.fillText('@cadadiaunosminutos_ben_chino', W - PAD, H - PAD * 0.55);
+      ctx.fillText('@cadadiaunosminutos_ben_chino', W - PAD, offY + H0 - PAD * 0.55);
     }
     blobPromise = new Promise(res => cv.toBlob(b => res(b), 'image/png'));
+  }
+
+  /* ---------- IG 參考線（只畫在預覽上，不進圖片） ---------- */
+  function updateGuide() {
+    const s = state.s, box = $('#guideBox'), fixed = !!RATIO_H[s.ratio];
+    $('#guideLab').style.display = fixed ? '' : 'none';
+    const on = fixed && s.guide && !cv.hidden;
+    box.hidden = !on; $('#guideHint').hidden = !on; box.innerHTML = '';
+    if (!on) return;
+    const add = css => { const i = document.createElement('i'); i.style.cssText = css; box.appendChild(i); };
+    const dash = '1.5px dashed #A63A2B';
+    if (s.ratio === '9x16') {
+      const p = (250 / 1920 * 100).toFixed(2) + '%';
+      add('left:0;right:0;top:0;height:' + p + ';border-bottom:' + dash);
+      add('left:0;right:0;bottom:0;height:' + p + ';border-top:' + dash);
+      $('#guideHint').textContent = '限時動態的上下各約 250 像素，會被帳號名稱和回覆欄蓋住（灰色區域）。重要的字放在虛線裡面。';
+    } else {
+      const m = s.ratio === '1x1' ? 12.5 : 3.125;   // IG 個人頁的格子是直式 3:4，左右會被裁掉
+      add('top:0;bottom:0;left:0;width:' + m + '%;border-right:' + dash);
+      add('top:0;bottom:0;right:0;width:' + m + '%;border-left:' + dash);
+      $('#guideHint').textContent = '灰色區域在 IG 個人頁的格子（直式 3:4）會被裁掉，點進貼文才看得到完整的圖。';
+    }
   }
 
   /* ---------- 更新畫面 ---------- */
@@ -791,9 +821,10 @@ const Engine = (function () {
     const n = Object.keys(state.manual).length;
     $('#resetLine').hidden = !n;
     $('#resetInfo').textContent = '已手動修改 ' + n + ' 處讀音';
-    if (empty) { $('#txtOut').textContent = ''; analysis = Engine.analyze('', state.custom, state.manual); updateRuleMsg(); return; }
+    if (empty) { $('#txtOut').textContent = ''; analysis = Engine.analyze('', state.custom, state.manual); updateRuleMsg(); updateGuide(); return; }
     analysis = Engine.analyze(state.text, state.custom, state.manual);
     draw();
+    updateGuide();
     $('#txtOut').textContent = Engine.textOutput(analysis.lines, state.s.mode, state.s.script);
     updateRuleMsg();
   }
@@ -866,6 +897,8 @@ const Engine = (function () {
     });
     sync();
   });
+  const guide = $('#guide'); guide.checked = !!state.s.guide;
+  guide.onchange = () => { state.s.guide = guide.checked; save(); updateGuide(); };
   const sign = $('#sign'); sign.checked = !!state.s.sign;
   sign.onchange = () => { state.s.sign = sign.checked; save(); render(); };
 
