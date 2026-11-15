@@ -57,22 +57,49 @@ def seq(field):
     return [p for p in field.split('|')] if field else []
 
 
-def main(src, dst):
+def load_gt_table(path):
+    """讀 GoodTeacher 的 readings.txt：回傳 (字→讀音編號清單, 編號→拼音)。"""
+    lab, chr_, sec = {}, {}, ''
+    for ln in open(path, encoding='utf-8-sig').read().splitlines():
+        if ln == '[L]': sec = 'L'; continue
+        if ln == '[C]': sec = 'C'; continue
+        i = ln.find('=')
+        if i < 0: continue
+        if sec == 'L': lab[ln[:i]] = ln[i+1:].split(' ')[0]
+        elif sec == 'C': chr_[ln[:i]] = ln[i+1:].split(',')
+    return chr_, lab
+
+
+def main(src, dst, readings=None):
     rows = list(csv.DictReader(open(src, encoding='utf-8-sig')))
+    # 表裡沒寫的字，直接查 GoodTeacher 的讀音表（readings.txt 和 rules.csv 同一版）
+    chr_, lab = load_gt_table(readings) if readings else ({}, {})
+    def from_table(ch, slot):
+        rs = chr_.get(ch)
+        if not rs: return None
+        try: code = rs[int(slot)]
+        except (ValueError, IndexError): return None
+        return unicodedata.normalize('NFC', lab.get(code, code))
     out, problems = [], []
     for n, r in enumerate(rows, start=2):
         if r['群組'] in SKIP_GROUPS:
             continue
         ch = r['字']
         if r['動作'] == '不改':
-            py = DEFAULT.get(ch)
+            py = DEFAULT.get(ch) or from_table(ch, 0)
         else:
-            py = r['讀音提示'].strip() or IDX.get((ch, r['讀音編號']))
+            py = r['讀音提示'].strip() or IDX.get((ch, r['讀音編號'])) or from_table(ch, r['讀音編號'])
         if not py:
             problems.append(f'第 {n} 行：{ch} 編號 {r["讀音編號"]} 找不到讀音')
             continue
         out.append([ch, py, seq(r['前文']), seq(r['後文'])])
-    json.dump({'rules': out, 'defaults': DEFAULT}, open(dst, 'w', encoding='utf-8'),
+    # 沒有規則、但 pinyin-pro 會讀錯的字：直接用 GoodTeacher 的預設讀音（只收人工確認過的字；要加字，先確認 GoodTeacher 預設沒錯）
+    VETTED = '息熄惜擊播巍乾績識只誰髮寧究暫儲檔艘飩微椰獺'
+    vetted = {}
+    for ch in VETTED:
+        v = from_table(ch, 0)
+        if v: vetted[ch] = v
+    json.dump({'rules': out, 'defaults': DEFAULT, 'vetted': vetted}, open(dst, 'w', encoding='utf-8'),
               ensure_ascii=False, separators=(',', ':'))
     print(f'{len(out)} 條規則寫入 {dst}')
     for p in problems:
@@ -81,4 +108,4 @@ def main(src, dst):
 
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv[1], sys.argv[2]))
+    sys.exit(main(sys.argv[1], sys.argv[2], sys.argv[3] if len(sys.argv) > 3 else None))
