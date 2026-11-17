@@ -70,10 +70,15 @@ def load_gt_table(path):
     return chr_, lab
 
 
-def main(src, dst, readings=None):
+def main(src, dst, readings=None, classes_path=None):
     rows = list(csv.DictReader(open(src, encoding='utf-8-sig')))
     # 表裡沒寫的字，直接查 GoodTeacher 的讀音表（readings.txt 和 rules.csv 同一版）
     chr_, lab = load_gt_table(readings) if readings else ({}, {})
+    classes = {}
+    if classes_path:
+        for ln in open(classes_path, encoding='utf-8-sig').read().splitlines():
+            i = ln.find('=')
+            if i > 0: classes[ln[:i]] = ln[i+1:]
     def from_table(ch, slot):
         rs = chr_.get(ch)
         if not rs: return None
@@ -96,12 +101,23 @@ def main(src, dst, readings=None):
             continue
         out.append([ch, py, seq(r['前文']), seq(r['後文'])])
     # 沒有規則、但 pinyin-pro 會讀錯的字：直接用 GoodTeacher 的預設讀音（只收人工確認過的字；要加字，先確認 GoodTeacher 預設沒錯）
-    VETTED = '息熄惜擊播巍乾績識只誰髮寧究暫儲檔艘飩微椰獺嗯欸調夾夹炸切築筑臟麗丽廈厦饨縫缝'
+    VETTED = '息熄惜擊播巍乾績識只誰髮寧究暫儲檔艘飩微椰獺嗯欸調夾夹炸切築筑臟麗丽廈厦饨縫缝绩暂识击储档'   # 绩暂识击储档：繁體已確認的字的簡體寫法（GT_SDEF 預設）
     vetted = {}
     for ch in VETTED:
         v = from_table(ch, SDEF_SLOT.get(ch, 0))
         if v: vetted[ch] = v
-    json.dump({'rules': out, 'defaults': DEFAULT, 'vetted': vetted}, open(dst, 'w', encoding='utf-8'),
+    # 一／不 看下一字的聲調：GT 的類別（classes.txt）裡有些字預設是輕聲、卻歸在四聲類（例：个 → 一个 yí）。
+    # 引擎只看拼音會把這些字當輕聲，所以另外給「輕聲字 → GT 類別的聲調」。
+    neu_tone = {}
+    if classes:
+        for cname, tone in (('T4YI', 4), ('T123YI', 1)):
+            for ch in classes.get(cname, ''):
+                rs = chr_.get(ch)
+                if not rs: continue
+                v = from_table(ch, 0)
+                if v and not any(c in v for c in 'āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ') and ch not in neu_tone:
+                    neu_tone[ch] = tone
+    json.dump({'rules': out, 'defaults': DEFAULT, 'vetted': vetted, 'neuTone': neu_tone}, open(dst, 'w', encoding='utf-8'),
               ensure_ascii=False, separators=(',', ':'))
     print(f'{len(out)} 條規則寫入 {dst}')
     for p in problems:
@@ -110,4 +126,4 @@ def main(src, dst, readings=None):
 
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv[1], sys.argv[2], sys.argv[3] if len(sys.argv) > 3 else None))
+    sys.exit(main(sys.argv[1], sys.argv[2], sys.argv[3] if len(sys.argv) > 3 else None, sys.argv[4] if len(sys.argv) > 4 else None))

@@ -180,7 +180,8 @@ const Engine = (function () {
       const t = toneOf(r);
       if (t !== 5) return t;
       const d = GT.defaults[chars[k]] || (perChar(simp[k], [simp[k]])[0]);
-      return toneOf(d);
+      const t2 = toneOf(d);
+      return (t2 === 5 && GT.neuTone && GT.neuTone[chars[k]]) || t2;   // 个 等輕聲字：GT 把它歸在四聲類
     };
     const tokOk = (tok, k) => {
       if (k < 0 || k >= chars.length) return false;
