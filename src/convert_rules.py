@@ -96,7 +96,7 @@ def main(src, dst, readings=None):
             continue
         out.append([ch, py, seq(r['前文']), seq(r['後文'])])
     # 沒有規則、但 pinyin-pro 會讀錯的字：直接用 GoodTeacher 的預設讀音（只收人工確認過的字；要加字，先確認 GoodTeacher 預設沒錯）
-    VETTED = '息熄惜擊播巍乾績識只誰髮寧究暫儲檔艘飩微椰獺嗯欸調夾夹'
+    VETTED = '息熄惜擊播巍乾績識只誰髮寧究暫儲檔艘飩微椰獺嗯欸調夾夹炸'
     vetted = {}
     for ch in VETTED:
         v = from_table(ch, SDEF_SLOT.get(ch, 0))
