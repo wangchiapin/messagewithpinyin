@@ -81,6 +81,8 @@ def main(src, dst, readings=None):
         except (ValueError, IndexError): return None
         return unicodedata.normalize('NFC', lab.get(code, code))
     out, problems = [], []
+    # GT_SDEF：簡體字的預設字形若改用第 k 個讀音（例：夹 → jiá），網頁的「預設讀音」也要照它
+    SDEF_SLOT = {r['字']: int(r['讀音編號']) for r in rows if r['群組'] == 'GT_SDEF' and r['動作'] == '改' and not r['前文'] and not r['後文'] and r['讀音編號'].isdigit()}
     for n, r in enumerate(rows, start=2):
         if r['群組'] in SKIP_GROUPS:
             continue
@@ -94,10 +96,10 @@ def main(src, dst, readings=None):
             continue
         out.append([ch, py, seq(r['前文']), seq(r['後文'])])
     # 沒有規則、但 pinyin-pro 會讀錯的字：直接用 GoodTeacher 的預設讀音（只收人工確認過的字；要加字，先確認 GoodTeacher 預設沒錯）
-    VETTED = '息熄惜擊播巍乾績識只誰髮寧究暫儲檔艘飩微椰獺嗯欸調'
+    VETTED = '息熄惜擊播巍乾績識只誰髮寧究暫儲檔艘飩微椰獺嗯欸調夾夹'
     vetted = {}
     for ch in VETTED:
-        v = from_table(ch, 0)
+        v = from_table(ch, SDEF_SLOT.get(ch, 0))
         if v: vetted[ch] = v
     json.dump({'rules': out, 'defaults': DEFAULT, 'vetted': vetted}, open(dst, 'w', encoding='utf-8'),
               ensure_ascii=False, separators=(',', ':'))
