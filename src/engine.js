@@ -211,7 +211,7 @@ const Engine = (function () {
         const list = GT_BY_CHAR.get(c);
         if (!list) continue;
         const hit = list.find(r => ruleOk(r, k));
-        py[k] = hit ? hit[1] : (GT.defaults[c] || py[k]);
+        py[k] = hit ? hit[1] : (GT.defaults[c] || (GT.vetted && GT.vetted[c]) || py[k]);   // 有規則但都不符合：已確認的字用 GT 預設讀音
       }
     };
     gtPass(false);
