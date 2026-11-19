@@ -89,7 +89,7 @@ def main(src, dst, readings=None, classes_path=None):
     # GT_SDEF：簡體字的預設字形若改用第 k 個讀音（例：夹 → jiá），網頁的「預設讀音」也要照它
     SDEF_SLOT = {r['字']: int(r['讀音編號']) for r in rows if r['群組'] == 'GT_SDEF' and r['動作'] == '改' and not r['前文'] and not r['後文'] and r['讀音編號'].isdigit()}
     for n, r in enumerate(rows, start=2):
-        if r['群組'] in SKIP_GROUPS and not (r['群組'] == 'GT_SIMP9' and r['字'] == '脏') and not (r['群組'] == 'GT_SDEF' and r['字'] in ('缝', '铺')):   # 脏：心脏念 zàng、其餘念 zāng；缝／铺：整組規則（含最後的預設 féng／pū）網頁要照字體，否則 pinyin-pro 會把裁缝讀成 fèng
+        if r['群組'] in SKIP_GROUPS and not (r['群組'] == 'GT_SIMP9' and r['字'] in '脏只斗干') and not (r['群組'] == 'GT_SDEF' and r['字'] in ('缝', '铺')):   # 脏：心脏念 zàng、其餘念 zāng；缝／铺：整組規則（含最後的預設 féng／pū）網頁要照字體，否則 pinyin-pro 會把裁缝讀成 fèng
             continue
         ch = r['字']
         if r['動作'] == '不改':
@@ -101,7 +101,7 @@ def main(src, dst, readings=None, classes_path=None):
             continue
         out.append([ch, py, seq(r['前文']), seq(r['後文'])])
     # 沒有規則、但 pinyin-pro 會讀錯的字：直接用 GoodTeacher 的預設讀音（只收人工確認過的字；要加字，先確認 GoodTeacher 預設沒錯）
-    VETTED = '息熄惜擊播巍乾績識只誰髮寧究暫儲檔艘飩微椰獺嗯欸調夾夹炸切築筑臟麗丽廈厦饨縫缝绩暂识击储档喔遛啦卡谁質质框角綜综企熟當当曳跡迹捲模跌夕蹈突擁拥殼勁劲傍括耶仔鋪铺載载獲幹帆簿淑妳驟骤桿唉悄喲哟蹟鑽钻間间樸朴擲掷嗨寂菌隻揣偽難难豁掙挣削曲賜赐咧轉转喪丧崗岗剝剥論论蛤抹將将穴馴驯似踏昔眶酵緝缉蔔垃圾拚咔'   # 绩暂识击储档：繁體已確認的字的簡體寫法（GT_SDEF 預設）
+    VETTED = '哦嬤嬷蝸蜗片薄息熄惜擊播巍乾績識只誰髮寧究暫儲檔艘飩微椰獺嗯欸調夾夹炸切築筑臟麗丽廈厦饨縫缝绩暂识击储档喔遛啦卡谁質质框角綜综企熟當当曳跡迹捲模跌夕蹈突擁拥殼勁劲傍括耶仔鋪铺載载獲幹帆簿淑妳驟骤桿唉悄喲哟蹟鑽钻間间樸朴擲掷嗨寂菌隻揣偽難难豁掙挣削曲賜赐咧轉转喪丧崗岗剝剥論论蛤抹將将穴馴驯似踏昔眶酵緝缉蔔垃圾拚咔'   # 绩暂识击储档：繁體已確認的字的簡體寫法（GT_SDEF 預設）
     vetted = {}
     for ch in VETTED:
         v = from_table(ch, SDEF_SLOT.get(ch, 0))
