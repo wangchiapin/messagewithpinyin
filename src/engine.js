@@ -52,6 +52,8 @@ const Engine = (function () {
 東西=dōng xī
 便宜=pián yí
 謝謝=xiè xie
+結巴=jié bā
+結結巴巴=jié jié bā bā
 `;
 
   /* ---------- GoodTeacher 語境規則（由 rules.csv 轉入） ---------- */
